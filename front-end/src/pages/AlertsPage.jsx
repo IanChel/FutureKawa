@@ -147,7 +147,7 @@ export default function AlertsPage() {
         <p className="text-sm sm:text-base text-slate-500">
           {selectedTab === 'resolved'
             ? 'Incidents clôturés, avec durée et mode de résolution.'
-            : 'Incidents en cours sur l'ensemble du réseau.'}
+            : "Incidents en cours sur l'ensemble du réseau."}
         </p>
       </div>
 
