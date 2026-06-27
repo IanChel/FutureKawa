@@ -10,14 +10,18 @@ Module FutureKawa (FastAPI) — pilotage du capteur physique à distance.
 
 import json
 import os
+import pathlib
 import random
 import threading
 import time
 from datetime import datetime, timezone
 
+_BASE_DIR = pathlib.Path(__file__).parent
+
 import httpx
 import paho.mqtt.client as mqtt
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -39,6 +43,12 @@ IDEAUX = {
 }
 
 app = FastAPI(title="FutureKawa - Pilotage capteur & simulateur")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ===========================================================================
 #  Référentiel (proxy vers le central) pour alimenter les menus en cascade
@@ -53,6 +63,20 @@ def _login_central() -> str:
     return r.json()["accessToken"]
 
 
+def _refresh_token_loop():
+    """Renouvelle le token toutes les 12 min (JWT expire à 15 min)."""
+    while True:
+        time.sleep(12 * 60)
+        if SIM_EMAIL and SIM_PASSWORD:
+            try:
+                _token["value"] = _login_central()
+            except Exception:
+                _token["value"] = None
+
+
+threading.Thread(target=_refresh_token_loop, daemon=True).start()
+
+
 def _get_central(path: str):
     if _token["value"] is None:
         _token["value"] = _login_central()
@@ -63,7 +87,7 @@ def _get_central(path: str):
 
     try:
         resp = _call()
-        if resp.status_code == 401:
+        if resp.status_code in (401, 403):
             _token["value"] = _login_central()
             resp = _call()
         resp.raise_for_status()
@@ -285,7 +309,7 @@ def etat():
 # ---------------------------------------------------------------------------
 @app.get("/")
 def index():
-    return FileResponse("static/index.html")
+    return FileResponse(_BASE_DIR / "static" / "index.html")
 
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=_BASE_DIR / "static"), name="static")

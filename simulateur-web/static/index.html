@@ -53,8 +53,9 @@
   <label>Identifiant du capteur (= DEVICE_ID du firmware)</label>
   <input type="text" id="deviceId" value="capteur-01">
 
+  <div class="err" id="paysErr" style="margin:8px 0"></div>
   <div class="cfg-grid" style="margin-top:6px">
-    <div><label>Pays</label><select id="cfgPays"></select></div>
+    <div><label>Pays <button onclick="initPays()" style="margin-left:6px;padding:2px 7px;font-size:11px;border-radius:6px;border:1px solid var(--line);background:#11141a;color:var(--muted);cursor:pointer">↻</button></label><select id="cfgPays"></select></div>
     <div><label>Exploitation</label><select id="cfgExp" disabled></select></div>
     <div><label>Entrepôt</label><select id="cfgEnt" disabled></select></div>
     <div><label>Capteur</label><select id="cfgCap" disabled></select></div>
@@ -83,7 +84,7 @@
 <h2 style="margin:24px 0 12px">🧪 Simulation (mesures générées — pour tester sans capteur)</h2>
 <div class="grid">
   <div class="card">
-    <label>Pays</label><select id="pays"></select>
+    <label>Pays <button onclick="initPays()" style="margin-left:6px;padding:2px 7px;font-size:11px;border-radius:6px;border:1px solid var(--line);background:#11141a;color:var(--muted);cursor:pointer">↻</button></label><select id="pays"></select>
     <label>Exploitation</label><select id="exploitation" disabled></select>
     <label>Entrepôt</label><select id="entrepot" disabled></select>
     <label>Capteur</label><select id="capteur" disabled></select>
@@ -112,22 +113,31 @@
 </div>
 
 <script>
-  const API = "";
+  const API = window.location.port === "8050" ? "" : "http://localhost:8050";
   let mode = "normal";
   let currentCapteur = null;
   let chart;
 
   function setMode(m){ mode=m; document.getElementById("mode-normal").classList.toggle("active",m==="normal"); document.getElementById("mode-anomalie").classList.toggle("active",m==="anomalie"); }
-  async function jget(url){ const r=await fetch(API+url); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+  const PAYS_NOMS = { "BRESIL":"Brésil", "EQUATEUR":"Équateur", "COLOMBIE":"Colombie" };
+
+  async function _parseErr(r){ const t=await r.text(); try{ return JSON.parse(t).detail||t; }catch{ return t||"Erreur inconnue"; } }
+  async function jget(url){ const r=await fetch(API+url); if(!r.ok) throw new Error(await _parseErr(r)); return r.json(); }
   function selText(id){ const s=document.getElementById(id); return s.options[s.selectedIndex] ? s.options[s.selectedIndex].text : ""; }
   function fill(id,arr,valFn,txtFn){ const sel=document.getElementById(id); sel.disabled=false; sel.innerHTML='<option value="">— choisir —</option>'+arr.map(x=>`<option value="${valFn(x)}">${txtFn(x)}</option>`).join(""); }
   function resetSelect(id){ const sel=document.getElementById(id); sel.innerHTML=""; sel.disabled=true; }
 
   async function initPays(){
-    const data=await jget("/api/pays");
-    const opts='<option value="">— choisir —</option>'+data.map(p=>`<option value="${p.code}">${p.code}</option>`).join("");
-    document.getElementById("cfgPays").innerHTML=opts;
-    document.getElementById("pays").innerHTML=opts;
+    document.getElementById("paysErr").textContent="⏳ Chargement des pays…";
+    try{
+      const data=await jget("/api/pays");
+      const opts='<option value="">— choisir —</option>'+data.map(p=>`<option value="${p.code}">${PAYS_NOMS[p.code]||p.code}</option>`).join("");
+      document.getElementById("cfgPays").innerHTML=opts;
+      document.getElementById("pays").innerHTML=opts;
+      document.getElementById("paysErr").textContent="";
+    }catch(e){
+      document.getElementById("paysErr").textContent="❌ Impossible de charger les pays : "+e.message;
+    }
   }
 
   // ===== Cascade CAPTEUR =====
@@ -149,7 +159,7 @@
       const r=await fetch(API+"/api/capteur/demarrer",{ method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({ deviceId, pays, entrepotId:parseInt(entrepotId), capteurId:capteurId||null, frequence,
           paysNom:pays, exploitationNom:selText("cfgExp"), entrepotNom:selText("cfgEnt"), capteurNom:selText("cfgCap") }) });
-      if(!r.ok) throw new Error((await r.json()).detail||"Erreur");
+      if(!r.ok) throw new Error(await _parseErr(r));
       const d=await r.json();
       document.getElementById("capOk").textContent=`✅ Démarré : mesures vers ${d.config.topic} toutes les ${d.config.frequence}s`;
       document.getElementById("capStart").disabled=true; document.getElementById("capStop").disabled=false;
@@ -161,7 +171,7 @@
     document.getElementById("capErr").textContent=""; document.getElementById("capOk").textContent="";
     try{
       const r=await fetch(API+`/api/capteur/arreter/${deviceId}`,{ method:"POST" });
-      if(!r.ok) throw new Error((await r.json()).detail||"Erreur");
+      if(!r.ok) throw new Error(await _parseErr(r));
       document.getElementById("capOk").textContent="■ Ordre d'arrêt envoyé.";
       document.getElementById("capStart").disabled=false; document.getElementById("capStop").disabled=true;
       document.getElementById("capDot").className="dot"; document.getElementById("capStatus").textContent="À l'arrêt";
@@ -171,7 +181,7 @@
     const deviceId=document.getElementById("deviceId").value.trim()||"capteur-01";
     try{
       const r=await fetch(API+`/api/capteur/effacer-config/${deviceId}`,{ method:"POST" });
-      if(!r.ok) throw new Error((await r.json()).detail||"Erreur");
+      if(!r.ok) throw new Error(await _parseErr(r));
       document.getElementById("capOk").textContent="🗑️ Config retenue effacée.";
     }catch(e){ document.getElementById("capErr").textContent=e.message; }
   }
@@ -187,7 +197,7 @@
     if(!pays||!entrepotId||!capteurId){ document.getElementById("err").textContent="Sélectionne pays, entrepôt et capteur."; return; }
     try{
       const r=await fetch(API+"/api/simulation/demarrer",{ method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ pays, entrepotId:parseInt(entrepotId), capteurId, mode, frequence }) });
-      if(!r.ok) throw new Error((await r.json()).detail||"Erreur");
+      if(!r.ok) throw new Error(await _parseErr(r));
       currentCapteur=capteurId; document.getElementById("btnStart").disabled=true; document.getElementById("btnStop").disabled=false; resetChart();
     }catch(e){ document.getElementById("err").textContent=e.message; }
   }
@@ -221,7 +231,7 @@
       options:{ animation:false, scales:{ y:{ beginAtZero:false } }, plugins:{ legend:{ labels:{ color:"#e6e8ec" } } } } });
   }
 
-  initChart(); initPays(); setInterval(poll,1000);
+  initPays(); try{ initChart(); }catch(e){ console.warn("Chart.js indisponible :", e); } setInterval(poll,1000);
 </script>
 </body>
 </html>

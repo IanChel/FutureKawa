@@ -105,7 +105,7 @@ services:
       APP_MQTT_BROKERURL: tcp://fk-mosquitto:1883
       MAIL_HOST: fk-mailpit
       MAIL_PORT: "1025"
-    ports: ["8080:8080"]
+    ports: ["8085:8080"]
     depends_on:
       fk-postgres: { condition: service_healthy }
       fk-mosquitto: { condition: service_started }
