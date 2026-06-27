@@ -27,7 +27,6 @@ export default defineConfig({
       '/pays': proxyEntry,
       '/api/simulation': simEntry,
       '/api/capteur': simEntry,
-      '/api/pays': simEntry,
       '/api': proxyEntry,
     },
   },

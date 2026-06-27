@@ -3,6 +3,7 @@ import Sidebar from '../components/Sidebar';
 import { Menu, LogOut } from 'lucide-react';
 import { useAuth, userInitials, userDisplayName, userRoleLabel } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { superAdminNav, adminPaysNav, employeeNav } from '../config/navigation';
 
 export default function DashboardLayout({
   children,
@@ -23,6 +24,13 @@ export default function DashboardLayout({
     role: userRoleLabel(authUser),
   };
 
+  const roles = authUser?.roles || [];
+  const resolvedNavItems = navItems.length > 0 ? navItems : (
+    roles.includes('SUPER_ADMIN') ? superAdminNav :
+    roles.includes('ADMIN_PAYS') ? adminPaysNav :
+    employeeNav
+  );
+
   const handleLogout = async () => {
     await logout();
     navigate('/login', { replace: true });
@@ -37,7 +45,7 @@ export default function DashboardLayout({
         />
       )}
 
-      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} navItems={navItems} />
+      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} navItems={resolvedNavItems} />
 
       <div className="lg:ml-72 flex flex-col min-h-screen">
         <header className="h-20 flex items-center justify-between px-4 sm:px-6 lg:px-8 bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30">

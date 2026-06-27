@@ -15,6 +15,7 @@ import SystemSettings from './pages/SystemSettings';
 import ConnectionHistory from './pages/ConnectionHistory';
 import Warehouses from './pages/Warehouses';
 import Sensors from './pages/Sensors';
+import StocksPage from './pages/StocksPage';
 
 function LoadingScreen() {
   return (
@@ -84,6 +85,14 @@ function App() {
             element={
               <ProtectedRoute roles={['SUPER_ADMIN']}>
                 <CountriesManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/stocks"
+            element={
+              <ProtectedRoute roles={['SUPER_ADMIN']}>
+                <StocksPage />
               </ProtectedRoute>
             }
           />
