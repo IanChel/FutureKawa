@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { AlertsProvider } from './context/AlertsContext';
 
 import Login from './pages/Login';
 import DashboardSuperAdmin from './pages/DashboardSuperAdmin';
@@ -51,6 +52,7 @@ function RootRedirect() {
 function App() {
   return (
     <AuthProvider>
+      <AlertsProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<RootRedirect />} />
@@ -170,6 +172,7 @@ function App() {
           />
         </Routes>
       </BrowserRouter>
+      </AlertsProvider>
     </AuthProvider>
   );
 }

@@ -122,6 +122,15 @@ export const paysApi = {
       method: 'POST',
       body: JSON.stringify(lot),
     }),
+
+  modifierLot: (code, id, data) =>
+    request(`/api/pays/${code}/lots/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  supprimerLot: (code, id) =>
+    request(`/api/pays/${code}/lots/${id}`, { method: 'DELETE' }),
 };
 
 // ─── USERS ───────────────────────────────────────────────────────────────────
@@ -139,6 +148,8 @@ export const usersApi = {
       method: 'PATCH',
       body: JSON.stringify({ role }),
     }),
+  modifier: (id, data) =>
+    request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   supprimer: (id) =>
     request(`/users/${id}`, { method: 'DELETE' }),
 };

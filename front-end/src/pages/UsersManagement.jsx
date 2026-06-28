@@ -99,6 +99,7 @@ function Spinner() {
 }
 
 const EMPTY_FORM = { prenom: '', nom: '', email: '', role: 'OPERATEUR', pays: 'BRESIL', motDePasse: '' };
+const EMPTY_EDIT = { prenom: '', nom: '', email: '', role: 'OPERATEUR', pays: 'BRESIL' };
 
 export default function UsersManagement() {
   const [selectedCountry, setSelectedCountry] = useState('all');
@@ -108,6 +109,11 @@ export default function UsersManagement() {
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState('');
+
+  const [editUser, setEditUser] = useState(null);
+  const [editForm, setEditForm] = useState(EMPTY_EDIT);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState('');
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -179,6 +185,39 @@ export default function UsersManagement() {
       setFormError(e.message);
     } finally {
       setFormLoading(false);
+    }
+  };
+
+  const openEdit = (user) => {
+    setEditUser(user);
+    setEditForm({
+      prenom: user.prenom || '',
+      nom: user.nom || '',
+      email: user.email || '',
+      role: user.roles?.[0] || 'OPERATEUR',
+      pays: user.pays || 'BRESIL',
+    });
+    setEditError('');
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    setEditLoading(true);
+    setEditError('');
+    try {
+      await usersApi.modifier(editUser.id, {
+        nom: editForm.nom,
+        prenom: editForm.prenom,
+        email: editForm.email,
+        pays: editForm.pays,
+        role: editForm.role,
+      });
+      setEditUser(null);
+      fetchUsers();
+    } catch (err) {
+      setEditError(err.message);
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -274,13 +313,22 @@ export default function UsersManagement() {
                       <Toggle checked={user.actif} onChange={() => handleToggleActive(user)} />
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => handleSupprimer(user)}
-                        className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-rose-600 hover:bg-rose-50"
-                        title="Supprimer"
-                      >
-                        ✕
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => openEdit(user)}
+                          className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                          title="Modifier"
+                        >
+                          ✎
+                        </button>
+                        <button
+                          onClick={() => handleSupprimer(user)}
+                          className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-rose-600 hover:bg-rose-50"
+                          title="Supprimer"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -295,6 +343,97 @@ export default function UsersManagement() {
             </table>
           </div>
         </section>
+      )}
+
+      {editUser && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/40 p-4">
+          <div className="w-full max-w-2xl rounded-3xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
+              <h3 className="text-xl font-bold text-slate-900">Modifier l'utilisateur</h3>
+              <button
+                type="button"
+                onClick={() => setEditUser(null)}
+                className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100"
+              >
+                ×
+              </button>
+            </div>
+            <form onSubmit={handleEditSubmit}>
+              <div className="space-y-5 px-6 py-6">
+                {editError && (
+                  <div className="rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-700">
+                    {editError}
+                  </div>
+                )}
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  <ModalField label="Prénom">
+                    <input
+                      value={editForm.prenom}
+                      onChange={(e) => setEditForm({ ...editForm, prenom: e.target.value })}
+                      className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                      required
+                    />
+                  </ModalField>
+                  <ModalField label="Nom">
+                    <input
+                      value={editForm.nom}
+                      onChange={(e) => setEditForm({ ...editForm, nom: e.target.value })}
+                      className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                      required
+                    />
+                  </ModalField>
+                  <ModalField label="Adresse e-mail" full>
+                    <input
+                      type="email"
+                      value={editForm.email}
+                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                      className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                      required
+                    />
+                  </ModalField>
+                  <ModalField label="Rôle">
+                    <select
+                      value={editForm.role}
+                      onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                    >
+                      {ROLE_OPTIONS.map((r) => (
+                        <option key={r} value={r}>{ROLE_LABEL[r]}</option>
+                      ))}
+                    </select>
+                  </ModalField>
+                  <ModalField label="Pays">
+                    <select
+                      value={editForm.pays}
+                      onChange={(e) => setEditForm({ ...editForm, pays: e.target.value })}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                    >
+                      {PAYS_OPTIONS.map((p) => (
+                        <option key={p} value={p}>{PAYS_LABEL[p]}</option>
+                      ))}
+                    </select>
+                  </ModalField>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-5">
+                <button
+                  type="button"
+                  onClick={() => setEditUser(null)}
+                  className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={editLoading}
+                  className="rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+                >
+                  {editLoading ? 'Enregistrement…' : 'Enregistrer'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {isCreateModalOpen && (

@@ -93,6 +93,8 @@ export default function AlertsPage() {
 
   useEffect(() => {
     fetchAlertes();
+    const interval = setInterval(fetchAlertes, 30000);
+    return () => clearInterval(interval);
   }, [fetchAlertes]);
 
   const allActive = alertes.filter((a) => a.statut === 'ACTIVE');

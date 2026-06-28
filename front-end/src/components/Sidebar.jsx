@@ -1,6 +1,7 @@
 import React from 'react';
 import { Coffee } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAlerts } from '../context/AlertsContext';
 
 export default function Sidebar({
   isOpen,
@@ -9,6 +10,7 @@ export default function Sidebar({
 }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { activeAlertsCount } = useAlerts();
 
   const mainLinks = navItems.filter((item) => item.group === 'main');
   const adminLinks = navItems.filter((item) => item.group === 'admin');
@@ -17,6 +19,7 @@ export default function Sidebar({
     links.map((item) => {
       const Icon = item.icon;
       const isActive = location.pathname === item.path;
+      const isAlertes = item.label === 'Alertes';
 
       return (
         <button
@@ -31,8 +34,13 @@ export default function Sidebar({
               : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
-          <Icon className="w-5 h-5" />
-          <span className="font-medium text-sm">{item.label}</span>
+          <Icon className="w-5 h-5 shrink-0" />
+          <span className="font-medium text-sm flex-1 text-left">{item.label}</span>
+          {isAlertes && activeAlertsCount > 0 && (
+            <span className="ml-auto flex items-center justify-center min-w-[20px] h-5 rounded-full bg-rose-500 px-1.5 text-[11px] font-bold text-white leading-none">
+              {activeAlertsCount > 99 ? '99+' : activeAlertsCount}
+            </span>
+          )}
         </button>
       );
     });

@@ -12,6 +12,10 @@ const proxyEntry = {
       proxyReq.setHeader('origin', BACKEND)
       proxyReq.removeHeader('referer')
     })
+    proxy.on('error', (_err, _req, res) => {
+      res.writeHead(503, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ message: 'Backend inaccessible — vérifiez que le serveur est démarré (port 8090).' }))
+    })
   },
 }
 
