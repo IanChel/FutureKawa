@@ -170,6 +170,49 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Chemins utilisés par la navigation admin pays / employé
+              (alias vers les mêmes pages que les routes ci-dessus) */}
+          <Route
+            path="/admin/stocks"
+            element={
+              <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN_PAYS']}>
+                <StocksPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/entrepots"
+            element={
+              <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN_PAYS']}>
+                <Warehouses />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/capteurs"
+            element={
+              <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN_PAYS']}>
+                <Sensors />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/utilisateurs"
+            element={
+              <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN_PAYS']}>
+                <UsersManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/lots"
+            element={
+              <ProtectedRoute>
+                <StocksPage />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
       </AlertsProvider>

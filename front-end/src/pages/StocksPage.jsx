@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import DashboardLayout from '../layouts/DashboardLayout';
-import { superAdminNav } from '../config/navigation';
 import { paysApi, toBackendCode, formatDate } from '../services/api';
 import {
   Package, Clock, AlertTriangle, CheckCircle2, XCircle,
@@ -332,7 +331,6 @@ export default function StocksPage() {
   return (
     <DashboardLayout
       title="Stocks & lots"
-      navItems={superAdminNav}
       topTabs={COUNTRIES}
       activeTab={selectedCountry}
       onTabChange={(id) => { setSelectedCountry(id); setStatutFilter('Tous'); setSearch(''); }}
