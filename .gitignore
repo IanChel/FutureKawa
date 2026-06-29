@@ -5,6 +5,13 @@ target/
 *.war
 !**/src/main/**/*.jar
 
+# --- Python (simulateur web) ---
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
 # --- IDE ---
 .idea/
 *.iml
