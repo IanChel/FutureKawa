@@ -76,10 +76,11 @@ pipeline {
 
         stage('Images Docker') {
             steps {
-                // Construit les images des deux back-ends (Dockerfiles fournis
-                // dans chaque module). $BUILD_NUMBER est injecté par Jenkins.
-                sh 'docker build -t futurekawa/backend-pays:$BUILD_NUMBER -t futurekawa/backend-pays:latest backend-pays'
-                sh 'docker build -t futurekawa/backend-central:$BUILD_NUMBER -t futurekawa/backend-central:latest backend-central'
+                // Images « runtime » construites À PARTIR DES JAR déjà packagés
+                // à l'étape précédente (Dockerfile.ci) : pas de recompilation
+                // Maven, build en quelques secondes. $BUILD_NUMBER injecté par Jenkins.
+                sh 'docker build -f backend-pays/Dockerfile.ci -t futurekawa/backend-pays:$BUILD_NUMBER -t futurekawa/backend-pays:latest backend-pays'
+                sh 'docker build -f backend-central/Dockerfile.ci -t futurekawa/backend-central:$BUILD_NUMBER -t futurekawa/backend-central:latest backend-central'
                 sh "docker image ls --filter=reference='futurekawa/*'"
             }
         }
