@@ -1,0 +1,5 @@
+# Garantit des fins de ligne LF pour les scripts exécutés sous Linux
+# (entrypoints Docker, wrappers Maven) — sinon CRLF => « bad interpreter ».
+*.sh        text eol=lf
+mvnw        text eol=lf
+docker-entrypoint.sh text eol=lf
