@@ -35,7 +35,7 @@ app:
     read-timeout-ms: 3000      # delai max pour lire la reponse
   securite:
     jwt-secret: ${JWT_SECRET:un-secret-de-demo-tres-long-a-changer-en-production-32+caracteres}
-    acces-token-minutes: 15
+    acces-token-minutes: 60      # 60 min en dev/demo (le refresh gère l'expiration au-delà)
     refresh-token-jours: 7
 
 

@@ -55,4 +55,21 @@ public class PaysClient {
                 .retrieve()
                 .body(new ParameterizedTypeReference<Map<String, Object>>() {});
     }
+
+    /** Envoie un PUT avec corps JSON à un back-end pays (ex. modification de lot). */
+    public Map<String, Object> put(String baseUrl, String path, Object corps) {
+        return restClient.put()
+                .uri(baseUrl + path)
+                .body(corps)
+                .retrieve()
+                .body(new ParameterizedTypeReference<Map<String, Object>>() {});
+    }
+
+    /** Envoie un DELETE à un back-end pays (ex. suppression de lot). */
+    public Map<String, Object> delete(String baseUrl, String path) {
+        return restClient.delete()
+                .uri(baseUrl + path)
+                .retrieve()
+                .body(new ParameterizedTypeReference<Map<String, Object>>() {});
+    }
 }

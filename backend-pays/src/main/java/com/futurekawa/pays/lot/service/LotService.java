@@ -57,6 +57,34 @@ public class LotService {
         return toDto(lotRepository.save(lot));
     }
 
+    @Transactional
+    public LotDto modifierLot(Long id, com.futurekawa.pays.lot.dto.ModifierLotRequest req) {
+        Lot lot = lotRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Lot introuvable"));
+        // référence unique (sauf si elle n'a pas changé)
+        if (!lot.getReference().equals(req.reference())
+                && lotRepository.existsByReference(req.reference())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Un lot avec cette référence existe déjà");
+        }
+        Entrepot entrepot = entrepotRepository.findById(req.entrepotId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Entrepôt introuvable"));
+        lot.setReference(req.reference());
+        lot.setEntrepot(entrepot);
+        lot.setStatut(req.statut());
+        return toDto(lotRepository.save(lot));
+    }
+
+    @Transactional
+    public void supprimerLot(Long id) {
+        if (!lotRepository.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Lot introuvable");
+        }
+        lotRepository.deleteById(id);
+    }
+
     @Transactional(readOnly = true)
     public List<LotDto> listerLots(Long entrepotId, StatutLot statut) {
         List<Lot> lots;

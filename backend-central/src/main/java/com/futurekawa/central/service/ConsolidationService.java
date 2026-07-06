@@ -86,4 +86,16 @@ public class ConsolidationService {
         PaysProperties.Pays p = trouverPays(code);
         return client.post(p.getUrl(), path, corps);
     }
+
+    /** Relaie une modification (PUT) vers le back-end du pays. */
+    public Map<String, Object> modifierDansPays(String code, String path, Object corps) {
+        PaysProperties.Pays p = trouverPays(code);
+        return client.put(p.getUrl(), path, corps);
+    }
+
+    /** Relaie une suppression (DELETE) vers le back-end du pays. */
+    public Map<String, Object> supprimerDansPays(String code, String path) {
+        PaysProperties.Pays p = trouverPays(code);
+        return client.delete(p.getUrl(), path);
+    }
 }

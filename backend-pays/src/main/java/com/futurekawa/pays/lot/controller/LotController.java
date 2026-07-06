@@ -37,4 +37,16 @@ public class LotController {
     public LotDto consulterLot(@PathVariable Long id) {
         return lotService.consulterLot(id);
     }
+
+    @PutMapping("/{id}")
+    public LotDto modifierLot(@PathVariable Long id,
+                              @Valid @RequestBody com.futurekawa.pays.lot.dto.ModifierLotRequest req) {
+        return lotService.modifierLot(id, req);
+    }
+
+    @DeleteMapping("/{id}")
+    public java.util.Map<String, String> supprimerLot(@PathVariable Long id) {
+        lotService.supprimerLot(id);
+        return java.util.Map.of("message", "Lot supprimé");
+    }
 }

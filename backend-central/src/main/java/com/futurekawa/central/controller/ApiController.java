@@ -122,4 +122,17 @@ public class ApiController {
         isolation.verifierAcces(code);
         return consolidation.creerDansPays(code, "/lots", lot);
     }
+
+    @org.springframework.web.bind.annotation.PutMapping("/pays/{code}/lots/{id}")
+    public Map<String, Object> modifierLot(@PathVariable String code, @PathVariable Long id,
+                                           @org.springframework.web.bind.annotation.RequestBody Map<String, Object> lot) {
+        isolation.verifierAcces(code);
+        return consolidation.modifierDansPays(code, "/lots/" + id, lot);
+    }
+
+    @org.springframework.web.bind.annotation.DeleteMapping("/pays/{code}/lots/{id}")
+    public Map<String, Object> supprimerLot(@PathVariable String code, @PathVariable Long id) {
+        isolation.verifierAcces(code);
+        return consolidation.supprimerDansPays(code, "/lots/" + id);
+    }
 }

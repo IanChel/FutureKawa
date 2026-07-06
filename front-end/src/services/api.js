@@ -18,26 +18,45 @@ export function clearTokens() {
   localStorage.removeItem('fk_refresh_token');
 }
 
-async function tryRefresh() {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) {
-    clearTokens();
-    window.location.replace('/login');
-    throw new Error('Session expirée');
+// Un seul rafraîchissement à la fois : sans ce verrou, plusieurs requêtes qui
+// tombent en 401 en même temps lanceraient chacune un /auth/refresh. Or le
+// serveur fait tourner (rotation) le refresh token : le 1er réussit et révoque
+// l'ancien, les suivants envoient un token déjà révoqué -> échec qui efface les
+// jetons tout juste renouvelés. On partage donc la même promesse de refresh.
+let refreshEnCours = null;
+
+function tryRefresh() {
+  if (!refreshEnCours) {
+    refreshEnCours = doRefresh();
   }
-  const res = await fetch(`${BASE_URL}/auth/refresh`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken }),
-  });
-  if (!res.ok) {
-    clearTokens();
-    window.location.replace('/login');
-    throw new Error('Session expirée');
+  return refreshEnCours;
+}
+
+async function doRefresh() {
+  try {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) {
+      clearTokens();
+      window.location.replace('/login');
+      throw new Error('Session expirée');
+    }
+    const res = await fetch(`${BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!res.ok) {
+      clearTokens();
+      window.location.replace('/login');
+      throw new Error('Session expirée');
+    }
+    const data = await res.json();
+    setTokens(data.accessToken, data.refreshToken);
+    return data.accessToken;
+  } finally {
+    // On libère le verrou une fois le refresh terminé (succès ou échec).
+    refreshEnCours = null;
   }
-  const data = await res.json();
-  setTokens(data.accessToken, data.refreshToken);
-  return data.accessToken;
 }
 
 async function request(path, options = {}, retry = true) {

@@ -31,6 +31,7 @@ const COUNTRY_TABS = [
 ];
 
 const PAYS_LABEL = { BRESIL: 'Brésil', EQUATEUR: 'Équateur', COLOMBIE: 'Colombie' };
+const REFRESH_MS = 2000;
 
 function StatusBadge({ children, tone = 'ok' }) {
   const styles =
@@ -127,6 +128,7 @@ export default function MeasuresPage() {
   const [loadingEntrepots, setLoadingEntrepots] = useState(true);
   const [loadingMesures, setLoadingMesures] = useState(false);
   const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const backendCode = selectedCountry === 'all' ? 'BRESIL' : toBackendCode(selectedCountry);
 
@@ -136,6 +138,7 @@ export default function MeasuresPage() {
     setEntrepots([]);
     setSelectedEntrepotId(null);
     setMesures([]);
+    setLastUpdated(null);
     setError(null);
 
     const load = async () => {
@@ -161,16 +164,54 @@ export default function MeasuresPage() {
   }, [backendCode]);
 
   useEffect(() => {
-    if (!selectedEntrepotId) { setMesures([]); return; }
+    if (!selectedEntrepotId) {
+      setMesures([]);
+      setLastUpdated(null);
+      setLoadingMesures(false);
+      return;
+    }
+
     let cancelled = false;
-    setLoadingMesures(true);
+    let refreshTimeout = null;
+    let isRequestRunning = false;
 
-    paysApi.mesuresEntrepot(backendCode, selectedEntrepotId)
-      .then((data) => { if (!cancelled) setMesures(data || []); })
-      .catch(() => { if (!cancelled) setMesures([]); })
-      .finally(() => { if (!cancelled) setLoadingMesures(false); });
+    const charger = async (initial) => {
+      if (isRequestRunning) return;
+      isRequestRunning = true;
+      if (initial) setLoadingMesures(true);
 
-    return () => { cancelled = true; };
+      try {
+        const data = await paysApi.mesuresEntrepot(backendCode, selectedEntrepotId);
+        if (cancelled) return;
+        setMesures(data || []);
+        setLastUpdated(new Date());
+        setError(null);
+      } catch (e) {
+        if (!cancelled && initial) {
+          setMesures([]);
+          setError(e.message);
+        }
+      } finally {
+        isRequestRunning = false;
+        if (!cancelled && initial) setLoadingMesures(false);
+      }
+    };
+
+    charger(true);
+
+    const scheduleRefresh = () => {
+      refreshTimeout = setTimeout(async () => {
+        await charger(false);
+        if (!cancelled) scheduleRefresh();
+      }, REFRESH_MS);
+    };
+
+    scheduleRefresh();
+
+    return () => {
+      cancelled = true;
+      if (refreshTimeout) clearTimeout(refreshTimeout);
+    };
   }, [backendCode, selectedEntrepotId]);
 
   const periodHours = selectedPeriod === '24 h' ? 24 : selectedPeriod === '30 jours' ? 720 : 168;
@@ -297,6 +338,19 @@ export default function MeasuresPage() {
               </button>
             );
           })}
+        </div>
+
+        <div className="lg:ml-auto flex items-center gap-2 text-sm text-slate-500">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+          </span>
+          <span className="font-medium text-emerald-700">En direct</span>
+          {lastUpdated && (
+            <span className="text-slate-400">
+              · {lastUpdated.toLocaleTimeString('fr-FR')}
+            </span>
+          )}
         </div>
       </div>
 

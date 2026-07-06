@@ -53,7 +53,7 @@ function ModalField({ label, children }) {
 const INPUT_CLS = 'w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100';
 const SELECT_CLS = `${INPUT_CLS} bg-white`;
 
-const EMPTY_LOT = { reference: '', entrepotId: '', dateStockage: '', statut: 'CONFORME', pays: 'BRESIL' };
+const EMPTY_LOT = { reference: '', exploitationId: '', entrepotId: '', dateStockage: '', statut: 'CONFORME', pays: 'BRESIL' };
 
 // ─── Create / Edit Modal ─────────────────────────────────────────────────────
 
@@ -63,6 +63,7 @@ function LotFormModal({ mode, lot, onClose, onSave, showPays }) {
     isEdit
       ? {
           reference: lot.reference || '',
+          exploitationId: lot.exploitationId ?? '',
           entrepotId: lot.entrepotId ?? '',
           dateStockage: lot.dateStockage ? lot.dateStockage.slice(0, 10) : '',
           statut: lot.statut || 'CONFORME',
@@ -72,6 +73,17 @@ function LotFormModal({ mode, lot, onClose, onSave, showPays }) {
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Exploitations du pays sélectionné (nécessaires pour créer un lot).
+  const [exploitations, setExploitations] = useState([]);
+  useEffect(() => {
+    let cancelled = false;
+    if (!form.pays) return;
+    paysApi.exploitations(form.pays)
+      .then((list) => { if (!cancelled) setExploitations(list || []); })
+      .catch(() => { if (!cancelled) setExploitations([]); });
+    return () => { cancelled = true; };
+  }, [form.pays]);
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -122,6 +134,14 @@ function LotFormModal({ mode, lot, onClose, onSave, showPays }) {
               )}
               <ModalField label="Référence">
                 <input value={form.reference} onChange={set('reference')} className={INPUT_CLS} placeholder="LOT-2024-001" required />
+              </ModalField>
+              <ModalField label="Exploitation">
+                <select value={form.exploitationId} onChange={set('exploitationId')} className={SELECT_CLS} required>
+                  <option value="" disabled>Choisir une exploitation…</option>
+                  {exploitations.map((exp) => (
+                    <option key={exp.id} value={exp.id}>{exp.nom || `Exploitation #${exp.id}`}</option>
+                  ))}
+                </select>
               </ModalField>
               <ModalField label="ID entrepôt">
                 <input
@@ -298,8 +318,8 @@ export default function StocksPage() {
     const code = form.pays;
     await paysApi.creerLot(code, {
       reference: form.reference,
+      exploitationId: Number(form.exploitationId),
       entrepotId: Number(form.entrepotId),
-      dateStockage: form.dateStockage,
     });
     closeModal();
     fetchLots();
